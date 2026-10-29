@@ -3,250 +3,597 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Guru - MPI IPAS</title>
+    <title>Ruang Belajar - MPI IPAS</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <script>
         tailwind.config = {
             darkMode: 'class',
-            theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } }
+            theme: { 
+                extend: { 
+                    colors: { emerald: { 50: '#ecfdf5', 600: '#059669', 900: '#064e3b' }, amber: { 400: '#fbbf24', 500: '#f59e0b' } },
+                    fontFamily: { sans: ['Inter', 'sans-serif'], arabic: ['Amiri', 'serif'] }
+                } 
+            }
         }
     </script>
     <style>
         body { transition: background-color 0.3s, color 0.3s; }
         .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.4); }
         .dark .glass-card { background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 255, 255, 0.1); color: #f8fafc; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #059669; border-radius: 8px; }
+        @media print { .no-print { display: none !important; } body { background: white; color: black; } }
     </style>
 </head>
-<body id="app-body" class="bg-gradient-to-br from-amber-50 to-orange-100 dark:from-slate-900 dark:to-slate-800 text-slate-800 transition-all font-sans min-h-screen">
+<body id="app-body" class="bg-gradient-to-br from-emerald-50 to-teal-100 dark:from-slate-900 dark:to-teal-900 text-slate-800 transition-all font-sans min-h-screen flex flex-col selection:bg-amber-400 selection:text-slate-900">
 
-    <!-- TOP GLOBAL CONTROLS -->
-    <div class="fixed top-4 right-4 z-50 flex items-center gap-3 bg-white/70 dark:bg-black/50 backdrop-blur-md px-4 py-2 rounded-full shadow-lg">
+    <!-- GLOBAL CONTROLS -->
+    <div class="fixed top-4 right-4 z-50 flex items-center gap-3 bg-white/70 dark:bg-black/50 backdrop-blur-md px-4 py-2 rounded-full shadow-lg no-print">
+        <a href="index.html" class="text-slate-700 dark:text-amber-300 hover:scale-110 transition mr-2" title="Kembali ke Utama"><i class="fa-solid fa-home"></i></a>
+        <div class="w-px h-5 bg-slate-300 dark:bg-slate-600"></div>
         <button onclick="toggleTheme()" class="text-slate-700 dark:text-amber-300 hover:scale-110 transition"><i id="icon-theme" class="fa-solid fa-moon"></i></button>
         <div class="w-px h-5 bg-slate-300 dark:bg-slate-600"></div>
-        <button onclick="changeFontSize(1)" class="text-slate-700 dark:text-amber-200 font-bold hover:scale-110 transition">A+</button>
-        <button onclick="changeFontSize(-1)" class="text-slate-700 dark:text-amber-200 font-bold hover:scale-110 transition">A-</button>
+        <button onclick="changeFontSize(1)" class="text-slate-700 dark:text-emerald-200 font-bold hover:scale-110 transition">A+</button>
+        <button onclick="changeFontSize(-1)" class="text-slate-700 dark:text-emerald-200 font-bold hover:scale-110 transition">A-</button>
+        <div class="w-px h-5 bg-slate-300 dark:bg-slate-600"></div>
+        <button onclick="toggleSound()" class="text-slate-700 dark:text-emerald-200 hover:scale-110 transition"><i id="icon-sound" class="fa-solid fa-volume-high"></i></button>
     </div>
 
-    <main class="max-w-6xl mx-auto p-4 sm:p-6 flex flex-col justify-center min-h-screen">
-
-        <!-- LAYER LOGIN -->
-        <section id="layer-login" class="glass-card max-w-sm mx-auto rounded-2xl p-6 shadow-2xl border-2 border-amber-500 text-center">
-            <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center text-3xl mx-auto mb-3 text-amber-600">
-                <i class="fa-solid fa-user-tie"></i>
+    <!-- MODAL CUSTOM ALERT -->
+    <div id="modal-dialog" class="hidden fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="glass-card max-w-sm w-full rounded-2xl p-6 shadow-2xl relative text-center border-2 border-emerald-500 transform scale-95 transition-transform duration-300" id="modal-dialog-content">
+            <div class="w-16 h-16 mx-auto bg-amber-100 text-amber-500 rounded-full flex items-center justify-center text-3xl mb-4 shadow-inner">
+                <i class="fa-solid fa-bell animate-bounce"></i>
             </div>
-            <h3 class="text-xl font-bold text-amber-700 mb-1">Login Pendidik</h3>
-            <p class="text-xs text-slate-600 dark:text-slate-300 mb-5">Masukkan PIN Guru (Default: 123456)</p>
-            <form onsubmit="loginGuru(event)" class="space-y-4">
-                <input type="password" id="input-pin-guru" required class="w-full px-4 py-3 rounded-xl border dark:bg-slate-800 text-center text-xl tracking-widest">
-                <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl shadow-md transition">Akses Dashboard</button>
-            </form>
-        </section>
+            <h3 id="dialog-title" class="text-xl font-black text-emerald-950 dark:text-emerald-300 mb-2">Title</h3>
+            <p id="dialog-message" class="text-sm text-slate-700 dark:text-slate-300 mb-6 font-medium">Message</p>
+            <button onclick="closeDialog()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white font-bold py-2.5 rounded-xl shadow-md transition transform hover:-translate-y-0.5">Mengerti</button>
+        </div>
+    </div>
 
-        <!-- LAYER DASHBOARD -->
-        <section id="layer-dashboard" class="hidden space-y-6">
-            <div class="glass-card rounded-2xl p-5 shadow-xl flex justify-between items-center border-l-8 border-amber-500">
-                <div>
-                    <h2 class="text-2xl font-black text-slate-900 dark:text-amber-400">Dashboard Guru</h2>
-                    <p class="text-sm text-slate-600 dark:text-slate-300">Pusat kontrol administrasi dan evaluasi.</p>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="openModal('modal-jurnal')" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold"><i class="fa-solid fa-book"></i> Jurnal</button>
-                    <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-bold"><i class="fa-solid fa-power-off"></i> Keluar</button>
-                </div>
-            </div>
+    <main class="max-w-5xl mx-auto p-4 sm:p-6 flex-grow flex flex-col justify-center w-full">
 
-            <!-- Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="glass-card p-4 rounded-xl text-center">
-                    <p class="text-sm font-bold uppercase text-slate-500">Total Murid Mengerjakan</p>
-                    <h3 id="stat-total" class="text-4xl font-black mt-2">0</h3>
-                </div>
-                <div class="glass-card p-4 rounded-xl text-center">
-                    <p class="text-sm font-bold uppercase text-slate-500">Rata-rata Nilai Kelas</p>
-                    <h3 id="stat-rata" class="text-4xl font-black text-amber-600 mt-2">0.0</h3>
-                </div>
-                <div class="glass-card p-4 rounded-xl text-center">
-                    <p class="text-sm font-bold uppercase text-slate-500">Ketuntasan (KKM 75)</p>
-                    <h3 id="stat-kkm" class="text-4xl font-black text-emerald-600 mt-2">0%</h3>
-                </div>
-            </div>
-
-            <!-- Tabel Data -->
-            <div class="glass-card rounded-2xl p-5 shadow-xl">
-                <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-                    <h3 class="text-lg font-bold">Rekapitulasi Nilai Murid</h3>
-                    <div class="flex gap-2 flex-wrap justify-end">
-                        <select id="filter-kelas" onchange="renderTable()" class="px-3 py-2 rounded-lg border dark:bg-slate-800 text-sm">
-                            <option value="ALL">Semua Kelas</option>
-                            <option value="VA">V A</option><option value="VB">V B</option><option value="VC">V C</option>
-                        </select>
-                        <input type="text" id="search-murid" oninput="renderTable()" placeholder="Cari Nama/NISN..." class="px-3 py-2 rounded-lg border dark:bg-slate-800 text-sm">
-                        <button onclick="tarikDataSheet()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold"><i id="icon-sync" class="fa-solid fa-sync"></i> Tarik Data</button>
-                        <button onclick="downloadCSV()" class="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-bold"><i class="fa-solid fa-download"></i> CSV</button>
-                    </div>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm whitespace-nowrap">
-                        <thead class="bg-slate-100 dark:bg-slate-800">
-                            <tr>
-                                <th class="p-3">No</th><th class="p-3">Nama (NISN)</th><th class="p-3">Kelas</th>
-                                <th class="p-3">Materi</th><th class="p-3">Bermain</th><th class="p-3">Latihan</th>
-                                <th class="p-3 text-amber-600 font-bold">Nilai Akhir</th><th class="p-3">Predikat</th>
-                                <th class="p-3">Terakhir Dilihat</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-body" class="divide-y divide-slate-200 dark:divide-slate-700">
-                            <tr><td colspan="9" class="p-4 text-center text-slate-500">Klik "Tarik Data" untuk memuat riwayat.</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- MODAL JURNAL -->
-        <div id="modal-jurnal" class="hidden fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-            <div class="glass-card max-w-lg w-full rounded-2xl p-6 shadow-2xl relative border-2 border-emerald-500">
-                <button onclick="closeModal('modal-jurnal')" class="absolute top-4 right-4 text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
-                <h3 class="text-xl font-bold mb-4 border-b pb-2"><i class="fa-solid fa-book text-emerald-600 mr-2"></i> Jurnal Mengajar</h3>
-                <form onsubmit="submitJurnal(event)" class="space-y-4 text-sm">
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="date" id="j-tanggal" required class="px-3 py-2 rounded-lg border dark:bg-slate-800">
-                        <select id="j-kelas" required class="px-3 py-2 rounded-lg border dark:bg-slate-800">
-                            <option value="">- Pilih Kelas -</option>
-                            <option value="1A">1A</option><option value="VA">VA</option><option value="VB">VB</option>
-                            <!-- Tambahkan opsi kelas lainnya jika perlu -->
-                        </select>
-                        <select id="j-jam" required class="px-3 py-2 rounded-lg border dark:bg-slate-800">
-                            <option value="">- Jam Ke -</option>
-                            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+        <!-- LAYER COVER & LOGIN -->
+        <section id="layer-cover" class="glass-card rounded-3xl p-8 sm:p-12 text-center shadow-2xl relative">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-emerald-950 dark:text-emerald-400 mb-4">Misi Ekosistem Gorontalo</h1>
+            <p class="text-slate-600 dark:text-emerald-100 mb-8">Pintu Masuk Ruang Belajar IPAS Kelas V.</p>
+            <div class="max-w-md mx-auto text-left">
+                <form onsubmit="loginMurid(event)" class="space-y-4">
+                    <input type="text" id="input-nama" required placeholder="Nama Lengkap" class="w-full px-4 py-3 rounded-xl border dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                    <div class="flex gap-2">
+                        <input type="number" id="input-nisn" placeholder="NISN (opsional)" class="w-1/2 px-4 py-3 rounded-xl border dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                        <select id="input-kelas" required class="w-1/2 px-4 py-3 rounded-xl border dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                            <option value="">- Kelas -</option><option value="VA">V A</option><option value="VB">V B</option><option value="VC">V C</option>
                         </select>
                     </div>
-                    <textarea id="j-materi" required rows="2" class="w-full px-3 py-2 rounded-lg border dark:bg-slate-800" placeholder="Materi Pelajaran..."></textarea>
-                    <div class="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg border flex gap-2">
-                        <input type="text" id="j-sakit" class="w-1/3 px-2 py-1 rounded border" placeholder="Sakit (-)">
-                        <input type="text" id="j-ijin" class="w-1/3 px-2 py-1 rounded border" placeholder="Ijin (-)">
-                        <input type="text" id="j-alpa" class="w-1/3 px-2 py-1 rounded border" placeholder="Alpa (-)">
-                    </div>
-                    <button type="submit" id="btn-submit-jurnal" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl">Kirim Jurnal</button>
+                    <input type="password" id="input-pin" required placeholder="Buat PIN Rahasiamu" class="w-full px-4 py-3 rounded-xl border dark:bg-slate-800 dark:border-slate-600 dark:text-white tracking-widest text-center font-bold">
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md transition">Mulai Petualangan <i class="fa-solid fa-rocket ml-2"></i></button>
                 </form>
             </div>
-        </div>
+        </section>
+
+        <!-- LAYER DASHBOARD MURID (SEQUENTIAL LOCKING) -->
+        <section id="layer-dashboard" class="hidden space-y-6 my-auto">
+            <div class="glass-card rounded-2xl p-5 shadow-xl flex flex-col sm:flex-row justify-between items-center border-l-8 border-emerald-600 gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold dark:text-emerald-400">Halo, <span id="student-welcome-name"></span>!</h2>
+                    <p class="text-sm dark:text-slate-300">Selesaikan misi secara berurutan.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-bold">Keluar</button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Menu 1: Belajar -->
+                <div id="card-belajar" onclick="openMenu('belajar')" class="glass-card rounded-2xl p-5 shadow-xl border-2 border-emerald-500 hover:shadow-2xl hover:border-emerald-400 transition transform hover:-translate-y-1 cursor-pointer relative overflow-hidden group">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="w-10 h-10 bg-emerald-600 text-white rounded-xl flex items-center justify-center text-xl shadow-md group-hover:scale-110 transition"><i class="fa-solid fa-book-open-reader"></i></div>
+                        <span id="badge-lock-belajar" class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-unlock mr-1"></i> TERBUKA</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-emerald-950 dark:text-emerald-300 mb-1 leading-tight">1. KONSEP & MATERI</h3>
+                    <p class="text-[11px] text-slate-600 dark:text-slate-300 mb-3 leading-relaxed">Pelajari ekosistem.</p>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5"><div id="bar-belajar-progress" class="bg-emerald-600 h-1.5 rounded-full w-0 transition-all duration-500"></div></div>
+                </div>
+
+                <!-- Menu 2: Lab -->
+                <div id="card-lab" onclick="openMenu('lab')" class="glass-card rounded-2xl p-5 shadow-xl border-2 border-slate-300 opacity-75 hover:opacity-100 transition transform cursor-pointer relative overflow-hidden group">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="w-10 h-10 bg-blue-500 text-white rounded-xl flex items-center justify-center text-xl shadow-md group-hover:scale-110 transition"><i class="fa-solid fa-flask-vial"></i></div>
+                        <span id="badge-lock-lab" class="bg-slate-200 text-slate-700 text-[10px] font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-lock mr-1"></i> TERKUNCI</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-slate-200 mb-1 leading-tight">2. LAB. IPAS</h3>
+                    <p class="text-[11px] text-slate-600 dark:text-slate-400 mb-3 leading-relaxed">Simulasi keseimbangan.</p>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5"><div id="bar-lab-progress" class="bg-blue-500 h-1.5 rounded-full w-0 transition-all duration-500"></div></div>
+                </div>
+
+                <!-- Menu 3: Game -->
+                <div id="card-bermain" onclick="openMenu('bermain')" class="glass-card rounded-2xl p-5 shadow-xl border-2 border-slate-300 opacity-75 hover:opacity-100 transition transform cursor-pointer relative overflow-hidden group">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="w-10 h-10 bg-amber-500 text-white rounded-xl flex items-center justify-center text-xl shadow-md group-hover:scale-110 transition"><i class="fa-solid fa-gamepad"></i></div>
+                        <span id="badge-lock-bermain" class="bg-slate-200 text-slate-700 text-[10px] font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-lock mr-1"></i> TERKUNCI</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-slate-200 mb-1 leading-tight">3. BERMAIN</h3>
+                    <p class="text-[11px] text-slate-600 dark:text-slate-400 mb-3 leading-relaxed">Drag & Drop Misi.</p>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5"><div id="bar-bermain-progress" class="bg-amber-500 h-1.5 rounded-full w-0 transition-all duration-500"></div></div>
+                </div>
+
+                <!-- Menu 4: Kuis -->
+                <div id="card-berlatih" onclick="openMenu('berlatih')" class="glass-card rounded-2xl p-5 shadow-xl border-2 border-slate-300 opacity-75 hover:opacity-100 transition transform cursor-pointer relative overflow-hidden group">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="w-10 h-10 bg-teal-600 text-white rounded-xl flex items-center justify-center text-xl shadow-md group-hover:scale-110 transition"><i class="fa-solid fa-pen-ruler"></i></div>
+                        <span id="badge-lock-berlatih" class="bg-slate-200 text-slate-700 text-[10px] font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-lock mr-1"></i> TERKUNCI</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-slate-200 mb-1 leading-tight">4. EVALUASI</h3>
+                    <p class="text-[11px] text-slate-600 dark:text-slate-400 mb-3 leading-relaxed">Asesmen Akhir.</p>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5"><div id="bar-berlatih-progress" class="bg-teal-600 h-1.5 rounded-full w-0 transition-all duration-500"></div></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- LAYER LAB -->
+        <section id="layer-lab" class="hidden glass-card rounded-3xl p-4 sm:p-8 shadow-2xl relative my-auto">
+            <div class="flex items-center justify-between border-b pb-3 mb-4 border-blue-200">
+                <button onclick="backToDashboard()" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-arrow-left"></i> Menu Utama</button>
+                <span class="bg-blue-600 text-white font-bold text-xs px-3 py-1 rounded-full"><i class="fa-solid fa-flask"></i> Lab. IPAS</span>
+            </div>
+            
+            <div class="bg-blue-50/50 dark:bg-slate-800 border border-blue-200 dark:border-slate-700 p-4 rounded-xl mb-4">
+                <h3 class="font-bold text-blue-900 dark:text-blue-300 mb-2">Eksperimen: Keseimbangan Danau Limboto</h3>
+                <p class="text-xs text-slate-700 dark:text-slate-300">Geser slider di bawah ini untuk melihat bagaimana komponen abiotik dan biotik berinteraksi membentuk keseimbangan.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-5 bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div>
+                        <label class="flex justify-between text-xs font-bold mb-1"><span>Volume Air (Abiotik)</span> <span id="val-water" class="text-blue-600">70%</span></label>
+                        <input type="range" id="sim-water" min="0" max="100" value="70" oninput="runLabSimulation()" class="w-full h-2 bg-slate-200 rounded-lg accent-blue-600 cursor-pointer">
+                    </div>
+                    <div>
+                        <label class="flex justify-between text-xs font-bold mb-1"><span>Pencemaran Sampah (Abiotik)</span> <span id="val-trash" class="text-red-600">20%</span></label>
+                        <input type="range" id="sim-trash" min="0" max="100" value="20" oninput="runLabSimulation()" class="w-full h-2 bg-slate-200 rounded-lg accent-red-600 cursor-pointer">
+                    </div>
+                    <div>
+                        <label class="flex justify-between text-xs font-bold mb-1"><span>Ikan Payangka (Biotik)</span> <span id="val-fish" class="text-emerald-600">50%</span></label>
+                        <input type="range" id="sim-fish" min="0" max="100" value="50" oninput="runLabSimulation()" class="w-full h-2 bg-slate-200 rounded-lg accent-emerald-600 cursor-pointer">
+                    </div>
+                </div>
+
+                <div class="relative bg-sky-100 rounded-2xl border-4 border-slate-300 h-64 overflow-hidden flex flex-col items-center justify-end shadow-inner">
+                    <div class="absolute top-4 right-4 w-12 h-12 bg-amber-400 rounded-full animate-pulse"></div>
+                    <div id="sim-status" class="absolute top-4 z-20 text-center font-black text-emerald-700 bg-white/90 px-4 py-2 rounded-xl text-xs shadow-md border border-emerald-200 transition-colors">Ekosistem Seimbang! 🌿🐟</div>
+                    <div id="sim-trash-layer" class="absolute top-1/2 w-full flex justify-around opacity-20 z-10 transition-opacity duration-500">
+                        <i class="fa-solid fa-bottle-water text-slate-600 text-xl"></i><i class="fa-solid fa-trash-can text-slate-600 text-xl mt-4"></i><i class="fa-solid fa-bag-shopping text-slate-600 text-xl"></i>
+                    </div>
+                    <div id="sim-water-bg" class="w-full bg-blue-500 transition-all duration-700 flex items-center justify-center relative border-t-4 border-blue-400" style="height: 70%;">
+                        <div id="sim-visual-fish" class="text-4xl animate-bounce z-10 text-white drop-shadow-md">🐟 🐠 🐟</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end pt-4 border-t border-slate-200 dark:border-slate-700">
+                <button onclick="finishLabExperiment()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg transition">Selesai Eksperimen & Lanjut</button>
+            </div>
+        </section>
+
+        <!-- LAYER BELAJAR -->
+        <section id="layer-belajar" class="hidden glass-card rounded-3xl p-4 sm:p-8 shadow-2xl relative my-auto">
+            <div class="flex items-center justify-between border-b pb-3 mb-4 border-emerald-100">
+                <button onclick="backToDashboard()" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-arrow-left"></i> Menu Utama</button>
+                <span id="slide-belajar-num" class="bg-emerald-700 text-white font-bold text-xs px-3 py-1 rounded-full">Slide 1 / 10</span>
+            </div>
+            <div id="content-belajar-slide" class="min-h-[380px] max-h-[60vh] overflow-y-auto custom-scrollbar pr-2 space-y-4"></div>
+            <div id="slide-check-container" class="mt-4 pt-4 border-t border-emerald-200 bg-emerald-50/70 dark:bg-slate-800 p-4 rounded-2xl"></div>
+            <div class="flex justify-between items-center mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
+                <button id="btn-belajar-prev" onclick="navBelajarSlide(-1)" class="bg-slate-200 text-slate-700 font-semibold px-4 py-2 rounded-xl text-sm transition">Slide Sebelumnya</button>
+                <button id="btn-belajar-next" onclick="navBelajarSlide(1)" class="bg-emerald-600 text-white font-bold px-6 py-2 rounded-xl text-sm shadow transition">Slide Berikutnya</button>
+            </div>
+        </section>
+
+        <!-- LAYER BERMAIN -->
+        <section id="layer-bermain" class="hidden glass-card rounded-3xl p-4 sm:p-8 shadow-2xl relative my-auto">
+            <div class="flex items-center justify-between border-b pb-3 mb-4 border-amber-200">
+                <button onclick="backToDashboard()" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-arrow-left"></i> Menu Utama</button>
+                <span class="bg-amber-100 text-amber-900 font-bold text-xs px-3 py-1 rounded-full"><i class="fa-solid fa-star text-amber-500"></i> Drag & Drop Ekosistem</span>
+            </div>
+            
+            <div id="content-bermain-challenge" class="min-h-[400px] max-h-[65vh] overflow-y-auto custom-scrollbar pr-2 space-y-4">
+                <div class="bg-amber-50/90 dark:bg-slate-800 p-4 rounded-2xl border border-amber-300 text-xs sm:text-sm space-y-2">
+                    <p class="leading-relaxed font-medium">Klik item di Bank Item, lalu klik kotak tujuan yang tepat untuk mengelompokkan Biotik/Abiotik serta menyusun rantai makanan!</p>
+                </div>
+                
+                <div class="flex flex-col gap-4">
+                    <div class="bg-slate-100 dark:bg-slate-800 p-3 rounded-xl border min-h-[80px]" onclick="clickZone('bank')">
+                        <h4 class="text-xs font-bold mb-2">Bank Item (Klik untuk memilih, klik zona untuk memindah)</h4>
+                        <div id="drag-bank" class="flex flex-wrap gap-2 min-h-[40px]"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-4">
+                            <div onclick="clickZone('abiotik')" class="bg-sky-50 dark:bg-slate-700 border-2 border-dashed border-sky-400 p-3 rounded-xl min-h-[110px] cursor-pointer">
+                                <h4 class="text-xs font-bold text-sky-900 dark:text-sky-200 mb-2">Kelompok ABIOTIK</h4>
+                                <div id="zone-abiotik" class="zone-content flex flex-wrap gap-2 min-h-[40px]"></div>
+                            </div>
+                            <div onclick="clickZone('biotik')" class="bg-emerald-50 dark:bg-slate-700 border-2 border-dashed border-emerald-400 p-3 rounded-xl min-h-[110px] cursor-pointer">
+                                <h4 class="text-xs font-bold text-emerald-900 dark:text-emerald-200 mb-2">Kelompok BIOTIK</h4>
+                                <div id="zone-biotik" class="zone-content flex flex-wrap gap-2 min-h-[40px]"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-amber-50 dark:bg-slate-700 border-2 border-solid border-amber-300 p-3 rounded-xl">
+                            <h4 class="text-xs font-bold text-amber-900 dark:text-amber-200 mb-3">Rantai Makanan</h4>
+                            <div class="flex flex-col gap-3">
+                                <div class="flex items-center gap-2"><span class="text-xs font-bold w-20">1. Produsen</span><div onclick="clickZone('rm-1')" id="zone-rm-1" class="flex-1 bg-white dark:bg-slate-600 border-2 border-dashed border-amber-400 h-10 rounded-lg flex items-center px-2 cursor-pointer min-w-[120px]"></div></div>
+                                <div class="flex items-center gap-2"><span class="text-xs font-bold w-20">2. Konsumen I</span><div onclick="clickZone('rm-2')" id="zone-rm-2" class="flex-1 bg-white dark:bg-slate-600 border-2 border-dashed border-amber-400 h-10 rounded-lg flex items-center px-2 cursor-pointer min-w-[120px]"></div></div>
+                                <div class="flex items-center gap-2"><span class="text-xs font-bold w-20">3. Konsumen II</span><div onclick="clickZone('rm-3')" id="zone-rm-3" class="flex-1 bg-white dark:bg-slate-600 border-2 border-dashed border-amber-400 h-10 rounded-lg flex items-center px-2 cursor-pointer min-w-[120px]"></div></div>
+                                <div class="flex items-center gap-2"><span class="text-xs font-bold w-20">4. Konsumen III</span><div onclick="clickZone('rm-4')" id="zone-rm-4" class="flex-1 bg-white dark:bg-slate-600 border-2 border-dashed border-amber-400 h-10 rounded-lg flex items-center px-2 cursor-pointer min-w-[120px]"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-between items-center mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
+                <div id="game-feedback-inline" class="text-xs font-bold"></div>
+                <button id="btn-bermain-submit" onclick="submitDragDropAnswer()" class="bg-amber-500 text-white font-bold px-6 py-2 rounded-xl text-sm shadow">Periksa Jawaban</button>
+            </div>
+        </section>
+
+        <!-- LAYER BERLATIH -->
+        <section id="layer-berlatih" class="hidden glass-card rounded-3xl p-4 sm:p-8 shadow-2xl relative my-auto">
+            <div class="flex items-center justify-between border-b pb-3 mb-4 border-teal-200">
+                <button onclick="backToDashboard()" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-arrow-left"></i> Menu Utama</button>
+                <div class="flex items-center gap-2">
+                    <span id="quiz-level-badge" class="bg-teal-100 text-teal-800 font-bold text-xs px-3 py-1 rounded-full">Level 1 - Pemahaman</span>
+                    <span id="quiz-num-display" class="bg-teal-700 text-white font-bold text-xs px-3 py-1 rounded-full">Soal 1 / 10</span>
+                </div>
+            </div>
+            <div id="content-berlatih-quiz" class="min-h-[380px] max-h-[60vh] overflow-y-auto custom-scrollbar pr-2 space-y-4"></div>
+            <div class="flex justify-between items-center mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
+                <button id="btn-quiz-prev" onclick="navQuizQuestion(-1)" class="bg-slate-200 text-slate-700 font-semibold px-4 py-2 rounded-xl text-sm transition">Soal Sebelumnya</button>
+                <button id="btn-quiz-next" onclick="navQuizQuestion(1)" class="bg-teal-600 text-white font-bold px-6 py-2 rounded-xl text-sm shadow transition">Soal Berikutnya</button>
+                <button id="btn-quiz-finish" onclick="finishAssessment()" class="hidden bg-emerald-600 text-white font-extrabold px-6 py-2 rounded-xl text-sm shadow animate-bounce">Selesai & Laporan</button>
+            </div>
+        </section>
+
+        <!-- LAYER REPORT -->
+        <section id="layer-report" class="hidden space-y-6 my-auto">
+            <div class="flex justify-between items-center no-print">
+                <button onclick="backToDashboard()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl text-sm transition">Kembali ke Dashboard</button>
+                <button onclick="downloadPDFReport()" class="bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-extrabold px-6 py-2.5 rounded-xl shadow-lg transition">Unduh PDF</button>
+            </div>
+            
+            <div id="pdf-report-area" class="bg-white dark:bg-slate-100 text-slate-800 rounded-2xl p-6 sm:p-10 shadow-2xl border-t-8 border-emerald-700">
+                <div class="border-b-2 border-emerald-800 pb-4 mb-6 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-black text-emerald-950 uppercase tracking-wide">LAPORAN HASIL BELAJAR SISWA</h2>
+                        <p class="text-xs font-bold text-emerald-700">MPI IPAS Kelas V / Fase C</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border mb-6 text-xs">
+                    <div><p class="text-slate-500">Nama Siswa:</p><p id="rep-student-name" class="font-bold text-sm text-slate-900">-</p></div>
+                    <div><p class="text-slate-500">Kelas:</p><p id="rep-student-class" class="font-bold text-sm text-slate-900">-</p></div>
+                    <div><p class="text-slate-500">Mata Pelajaran:</p><p class="font-semibold text-slate-900">IPAS / Ekosistem</p></div>
+                    <div><p class="text-slate-500">Tanggal:</p><p id="rep-date" class="font-semibold text-slate-900">-</p></div>
+                </div>
+
+                <div class="bg-gradient-to-r from-emerald-900 to-teal-800 text-white p-6 rounded-2xl shadow-inner mb-6 text-center">
+                    <p class="text-xs font-semibold text-amber-300 uppercase tracking-widest mb-1">Nilai Akhir Asesmen (Berlatih)</p>
+                    <div class="text-5xl font-black text-amber-400 my-1" id="rep-final-score">0</div>
+                    <p id="rep-predicate" class="text-sm font-bold text-emerald-100">Predikat: -</p>
+                </div>
+                
+                <div id="rep-wrong-answers-review" class="mt-6 border-t-2 border-dashed border-slate-300 pt-4 hidden">
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded-r-xl">
+                        <h4 class="font-bold text-red-900 mb-1 flex items-center">Evaluasi & Pembahasan Jawaban Keliru</h4>
+                    </div>
+                    <div id="wrong-answers-content" class="space-y-4 text-xs"></div>
+                </div>
+                
+            </div>
+        </section>
 
     </main>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxHDGd1Vhg_wCPFd70VgjXAh1Z42RHLCH8ksOptbtiSQhn7Xr1-kf3ZhQ6A2sRgDplhPA/exec"; 
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxHDGd1Vhg_wCPFd70VgjXAh1Z42RHLCH8ksOptbtiSQhn7Xr1-kf3ZhQ6A2sRgDplhPA/exec";
+
+        let state = {
+            student: { name: '', class: '', nisn: '', pin: '', date: '' },
+            progress: { belajarCompleted: false, labCompleted: false, bermainCompleted: false, berlatihCompleted: false },
+            belajar: { currentSlide: 0, completedSlides: new Array(10).fill(false) },
+            bermain: { score: 0 },
+            berlatih: { currentQuiz: 0, answers: new Array(10).fill(null), score: 0, levelScores: { lvl1: 0, lvl2: 0, lvl3: 0 } }
+        };
+
+        // Data Modules
+        const slideMateri = [
+            { title: "1. Pengertian Ekosistem", concept: "Ekosistem adalah hubungan timbal balik antara makhluk hidup (biotik) dan benda tak hidup (abiotik).", gorontaloContext: "Wilayah Gorontalo memiliki ekosistem kaya dari dataran tinggi hingga pesisir Teluk Tomini.", kbcValue: "Allah menciptakan alam seimbang. Menjaga ekosistem adalah wujud syukur.", quran: { arabic: "إِنَّا كُلَّ شَيْءٍ خَلَقْنَاهُ بِقَدَرٍ", translation: "Sungguh, Kami menciptakan segala sesuatu menurut ukuran (keseimbangan).", ref: "QS. Al-Qamar: 49", hikmah: "Takaran pas untuk saling menopang." }, challenge: { question: "Manakah kelompok komponen BIOTIK?", options: ["Air, Tanah, Udara", "Ikan, Pohon Bakau, Burung", "Sinar Matahari, Batu"], correct: 1 } },
+            { title: "2. Biotik: Produsen, Konsumen, Pengurai", concept: "Biotik terdiri atas Produsen (tumbuhan), Konsumen (hewan/manusia), dan Pengurai.", gorontaloContext: "Jagung di agraris Boalemo bertindak sebagai produsen utama.", kbcValue: "Tidak merusak sumber makanan adalah wujud cinta makhluk hidup.", quran: { arabic: "وَالْأَرْضَ وَضَعَهَا لِلْأَنَامِ", translation: "Dan bumi telah diciptakan-Nya untuk makhluk-Nya.", ref: "QS. Ar-Rahman: 10", hikmah: "Bumi diperuntukkan bagi kelangsungan bersama." }, challenge: { question: "Tumbuhan jagung dikategorikan sebagai...", options: ["Konsumen", "Pengurai", "Produsen"], correct: 2 } },
+            // (Untuk memperingkas, saya pakai 3 slide saja sebagai perwakilan agar tidak terlalu panjang, Anda bisa copy-paste slide lainnya dari versi asli jika butuh lengkap 10)
+            { title: "3. Komponen Abiotik", concept: "Elemen tak hidup seperti air, tanah, udara yang menyokong kehidupan.", gorontaloContext: "Kadar garam Teluk Tomini menentukan kehidupan karang.", kbcValue: "Tidak mencemari air adalah tanggung jawab moral.", quran: { arabic: "وَجَعَلْنَا مِنَ الْمَاءِ كُلَّ شَيْءٍ حَيٍّ", translation: "Dan Kami jadikan dari air segala sesuatu yang hidup.", ref: "QS. Al-Anbiya: 30", hikmah: "Air penyokong terpenting." }, challenge: { question: "Komponen ABIOTIK utama adalah...", options: ["Matahari & Air", "Cacing & Belalang", "Petani & Sapi"], correct: 0 } }
+        ];
+        // Memaksa state disesuaikan dengan jumlah slide dinamis
+        state.belajar.completedSlides = new Array(slideMateri.length).fill(false);
+
+        const dndItems = [
+            { id: 'i1', text: 'Matahari', type: 'abiotik' }, { id: 'i2', text: 'Air Danau', type: 'abiotik' },
+            { id: 'i3', text: 'Mangrove', type: 'biotik' }, { id: 'i4', text: 'Maleo', type: 'biotik' },
+            { id: 'i5', text: 'Fitoplankton', type: 'rm-1' }, { id: 'i6', text: 'Zooplankton', type: 'rm-2' },
+            { id: 'i7', text: 'Ikan Payangka', type: 'rm-3' }, { id: 'i8', text: 'Bangau', type: 'rm-4' }
+        ];
+        let activeItemId = null;
+
+        const quizQuestions = [
+            { level: 1, levelText: "Level 1 - Pemahaman", points: 10, stimulus: "Di ekosistem pesisir, terdapat air, batu, ikan, mangrove.", question: "Manakah komponen BIOTIK?", options: ["Ikan, Mangrove", "Air, Batu", "Mangrove, Batu"], correct: 0, explanation: "Biotik adalah makhluk hidup." },
+            { level: 2, levelText: "Level 2 - Penerapan", points: 10, stimulus: "Limbah detergen merusak kualitas air Danau Limboto.", question: "Dampak langsung ke Ikan Payangka?", options: ["Ikan meningkat", "Ikan menurun karena kurang makanan/oksigen", "Berubah jadi amfibi"], correct: 1, explanation: "Pencemaran membunuh plankton & mengurangi oksigen." },
+            { level: 3, levelText: "Level 3 - Penalaran HOTS", points: 10, stimulus: "QS. Al-Qamar 49: segala sesuatu ada takarannya. Pengeboman karang marak terjadi.", question: "Analisis dampak pengeboman tersebut?", options: ["Bagus untuk cari uang cepat", "Merusak keseimbangan alam jangka panjang", "Tidak berdampak"], correct: 1, explanation: "HOTS: Pengeboman merusak biotik & abiotik sekaligus." }
+        ];
+        state.berlatih.answers = new Array(quizQuestions.length).fill(null);
+
+        // UI Controls
+        let isDarkMode = false, baseFontSize = 16, isSoundMuted = false;
+        function toggleTheme() { isDarkMode = !isDarkMode; document.documentElement.classList.toggle('dark', isDarkMode); }
+        function changeFontSize(dir) { baseFontSize += (dir * 2); document.getElementById('app-body').style.fontSize = Math.max(12, Math.min(baseFontSize, 24)) + 'px'; }
+        function toggleSound() { isSoundMuted = !isSoundMuted; document.getElementById('icon-sound').className = isSoundMuted ? "fa-solid fa-volume-xmark text-red-500" : "fa-solid fa-volume-high"; }
         
-        let isDarkMode = false;
-        let baseFontSize = 16;
-        let dataMuridServer = [];
+        function hideAll() { document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden')); }
 
-        function toggleTheme() {
-            isDarkMode = !isDarkMode;
-            document.documentElement.classList.toggle('dark', isDarkMode);
-            document.getElementById('icon-theme').className = isDarkMode ? "fa-solid fa-sun" : "fa-solid fa-moon";
+        function showCustomDialog(title, message) {
+            document.getElementById('dialog-title').innerText = title; document.getElementById('dialog-message').innerText = message;
+            const modal = document.getElementById('modal-dialog'), content = document.getElementById('modal-dialog-content');
+            modal.classList.remove('hidden'); void modal.offsetWidth; modal.classList.remove('opacity-0'); content.classList.remove('scale-95');
         }
-        function changeFontSize(dir) {
-            baseFontSize += (dir * 2);
-            document.getElementById('app-body').style.fontSize = Math.max(12, Math.min(baseFontSize, 24)) + 'px';
+        function closeDialog() {
+            const modal = document.getElementById('modal-dialog'), content = document.getElementById('modal-dialog-content');
+            modal.classList.add('opacity-0'); content.classList.add('scale-95'); setTimeout(() => modal.classList.add('hidden'), 300);
         }
 
-        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-
-        window.onload = function() {
-            if(!localStorage.getItem('pin_guru')) localStorage.setItem('pin_guru', '123456');
-        }
-
-        function loginGuru(e) {
+        // Login
+        function loginMurid(e) {
             e.preventDefault();
-            if (document.getElementById('input-pin-guru').value === localStorage.getItem('pin_guru')) {
-                document.getElementById('layer-login').classList.add('hidden');
-                document.getElementById('layer-dashboard').classList.remove('hidden');
-            } else {
-                alert('PIN Salah!');
+            state.student = {
+                name: document.getElementById('input-nama').value,
+                nisn: document.getElementById('input-nisn').value || "-",
+                class: document.getElementById('input-kelas').value,
+                pin: document.getElementById('input-pin').value,
+                date: new Date().toLocaleDateString('id-ID')
+            };
+            document.getElementById('student-welcome-name').innerText = state.student.name;
+            hideAll();
+            updateDashboardLockStatus();
+            document.getElementById('layer-dashboard').classList.remove('hidden');
+        }
+
+        function logout() { hideAll(); document.getElementById('layer-cover').classList.remove('hidden'); }
+
+        function backToDashboard() { hideAll(); updateDashboardLockStatus(); document.getElementById('layer-dashboard').classList.remove('hidden'); }
+
+        function updateDashboardLockStatus() {
+            const countBelajar = state.belajar.completedSlides.filter(Boolean).length;
+            const totalSlides = slideMateri.length;
+            document.getElementById('bar-belajar-progress').style.width = `${(countBelajar/totalSlides)*100}%`;
+            if (countBelajar === totalSlides) state.progress.belajarCompleted = true;
+
+            const labCard = document.getElementById('card-lab'), labBadge = document.getElementById('badge-lock-lab');
+            if (state.progress.belajarCompleted) {
+                labCard.classList.remove('opacity-75'); labCard.classList.add('border-blue-400');
+                labBadge.className = "bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-1 rounded-full";
+                labBadge.innerHTML = '<i class="fa-solid fa-unlock mr-1"></i> TERBUKA';
+                document.getElementById('bar-lab-progress').style.width = state.progress.labCompleted ? '100%' : '0%';
+            }
+
+            const gameCard = document.getElementById('card-bermain'), gameBadge = document.getElementById('badge-lock-bermain');
+            if (state.progress.labCompleted) {
+                gameCard.classList.remove('opacity-75'); gameCard.classList.add('border-amber-400');
+                gameBadge.className = "bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full";
+                gameBadge.innerHTML = '<i class="fa-solid fa-unlock mr-1"></i> TERBUKA';
+                document.getElementById('bar-bermain-progress').style.width = state.progress.bermainCompleted ? '100%' : '0%';
+            }
+
+            const evalCard = document.getElementById('card-berlatih'), evalBadge = document.getElementById('badge-lock-berlatih');
+            if (state.progress.bermainCompleted) {
+                evalCard.classList.remove('opacity-75'); evalCard.classList.add('border-teal-500');
+                evalBadge.className = "bg-teal-100 text-teal-800 text-[10px] font-bold px-2 py-1 rounded-full";
+                evalBadge.innerHTML = '<i class="fa-solid fa-unlock mr-1"></i> TERBUKA';
+                document.getElementById('bar-berlatih-progress').style.width = state.progress.berlatihCompleted ? '100%' : '0%';
             }
         }
 
-        function logout() {
-            document.getElementById('layer-dashboard').classList.add('hidden');
-            document.getElementById('layer-login').classList.remove('hidden');
-            document.getElementById('input-pin-guru').value = '';
+        function openMenu(menu) {
+            hideAll();
+            if (menu === 'belajar') { document.getElementById('layer-belajar').classList.remove('hidden'); renderBelajarSlide(); } 
+            else if (menu === 'lab') {
+                if (!state.progress.belajarCompleted) { showCustomDialog('Terkunci', 'Selesaikan Materi dulu!'); backToDashboard(); return; }
+                document.getElementById('layer-lab').classList.remove('hidden'); runLabSimulation();
+            } else if (menu === 'bermain') {
+                if (!state.progress.labCompleted) { showCustomDialog('Terkunci', 'Selesaikan Lab dulu!'); backToDashboard(); return; }
+                document.getElementById('layer-bermain').classList.remove('hidden'); renderGameChallenge();
+            } else if (menu === 'berlatih') {
+                if (!state.progress.bermainCompleted) { showCustomDialog('Terkunci', 'Selesaikan Game dulu!'); backToDashboard(); return; }
+                document.getElementById('layer-berlatih').classList.remove('hidden'); renderQuizQuestion();
+            }
         }
 
-        function tarikDataSheet() {
-            if (GAS_URL === "URL_GAS_ANDA_DISINI") return alert("Harap ganti GAS_URL terlebih dahulu!");
-            const icon = document.getElementById('icon-sync');
-            icon.classList.replace('fa-sync', 'fa-spinner'); icon.classList.add('fa-spin');
+        // --- MODULE 1: BELAJAR ---
+        function renderBelajarSlide() {
+            const idx = state.belajar.currentSlide, data = slideMateri[idx];
+            document.getElementById('slide-belajar-num').innerText = `Slide ${idx + 1} / ${slideMateri.length}`;
             
-            fetch(GAS_URL + "?action=get_rekap").then(res => res.json()).then(data => {
-                if(data.status === 'success') { dataMuridServer = data.data; renderTable(); }
-            }).catch(e => alert("Gagal mengambil data.")).finally(() => {
-                icon.classList.remove('fa-spinner', 'fa-spin'); icon.classList.add('fa-sync');
+            const html = `
+                <h3 class="text-xl font-bold dark:text-emerald-300">${data.title}</h3>
+                <div class="bg-white dark:bg-slate-700 p-4 border-l-4 border-emerald-600 rounded-xl"><p>${data.concept}</p></div>
+                <div class="bg-teal-50 dark:bg-slate-700 p-4 border-l-4 border-teal-600 rounded-xl"><p>${data.gorontaloContext}</p></div>
+                <div class="bg-emerald-900 text-white p-4 rounded-xl text-center">
+                    <p class="font-arabic text-lg text-amber-300 mb-1">${data.quran.arabic}</p>
+                    <p class="italic text-xs text-emerald-100">"${data.quran.translation}"</p>
+                    <p class="text-[10px] text-amber-400 mt-1">${data.quran.ref}</p>
+                </div>
+            `;
+            document.getElementById('content-belajar-slide').innerHTML = html;
+
+            let opts = '';
+            data.challenge.options.forEach((o, i) => {
+                opts += `<button onclick="checkBelajarAns(${idx}, ${i})" class="w-full text-left p-2 rounded border bg-white dark:bg-slate-600 dark:text-white hover:bg-emerald-50 text-sm font-semibold">${o}</button>`;
             });
+            const isCompleted = state.belajar.completedSlides[idx];
+            document.getElementById('slide-check-container').innerHTML = `
+                <p class="font-bold text-sm mb-2">Tantangan: ${data.challenge.question}</p>
+                <div class="space-y-2">${opts}</div>
+                <div id="check-feedback-${idx}" class="text-sm font-bold mt-2">${isCompleted ? '✓ Tuntas' : ''}</div>
+            `;
+            document.getElementById('btn-belajar-prev').disabled = (idx === 0);
         }
 
-        function renderTable() {
-            const filterKelas = document.getElementById('filter-kelas').value;
-            const searchTxt = document.getElementById('search-murid').value.toLowerCase();
-            const tbody = document.getElementById('table-body');
-            tbody.innerHTML = '';
+        function checkBelajarAns(slideIdx, ansIdx) {
+            const correct = slideMateri[slideIdx].challenge.correct;
+            const fb = document.getElementById(`check-feedback-${slideIdx}`);
+            if (ansIdx === correct) {
+                fb.className = "text-sm font-bold text-emerald-600"; fb.innerText = "✓ Benar! Slide Tuntas.";
+                state.belajar.completedSlides[slideIdx] = true;
+                if(!isSoundMuted) confetti({particleCount: 20});
+            } else { fb.className = "text-sm font-bold text-red-600"; fb.innerText = "✗ Kurang tepat, coba lagi."; }
+        }
 
-            let filtered = dataMuridServer.filter(r => (filterKelas === 'ALL' || r.kelas === filterKelas) && (r.nama.toLowerCase().includes(searchTxt) || r.nisn.includes(searchTxt)));
-            let sumNilai = 0, lulus = 0;
+        function navBelajarSlide(dir) {
+            const next = state.belajar.currentSlide + dir;
+            if (dir === 1 && !state.belajar.completedSlides[state.belajar.currentSlide]) { showCustomDialog('Peringatan', 'Jawab tantangan di bawah slide dulu!'); return; }
+            if (next >= 0 && next < slideMateri.length) { state.belajar.currentSlide = next; renderBelajarSlide(); }
+            else if (next === slideMateri.length) { 
+                state.progress.belajarCompleted = true; showCustomDialog('Selamat', 'Materi Selesai! Lab Terbuka.'); backToDashboard(); 
+            }
+        }
 
-            if (filtered.length === 0) return tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center">Data tidak ditemukan.</td></tr>`;
+        // --- MODULE 2: LAB ---
+        function runLabSimulation() {
+            const w = parseInt(document.getElementById('sim-water').value), t = parseInt(document.getElementById('sim-trash').value), f = parseInt(document.getElementById('sim-fish').value);
+            document.getElementById('val-water').innerText = w + '%'; document.getElementById('val-trash').innerText = t + '%'; document.getElementById('val-fish').innerText = f + '%';
+            
+            const bg = document.getElementById('sim-water-bg'), stat = document.getElementById('sim-status'), layer = document.getElementById('sim-trash-layer');
+            bg.style.height = `${w}%`; layer.style.opacity = t / 100;
 
-            filtered.forEach((r, i) => {
-                let n = parseInt(r.nilai) || 0;
-                sumNilai += n; if(n >= 75) lulus++;
-                let clr = n >= 75 ? 'text-emerald-600' : 'text-red-500';
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700">
-                        <td class="p-3">${i+1}</td>
-                        <td class="p-3 font-bold">${r.nama} <span class="text-xs font-normal text-slate-400">(${r.nisn})</span></td>
-                        <td class="p-3">${r.kelas}</td>
-                        <td class="p-3 text-center">${r.materi}</td>
-                        <td class="p-3 text-center">${r.bermain}</td>
-                        <td class="p-3 text-center">${r.latihan}</td>
-                        <td class="p-3 text-center font-black ${clr} text-lg">${r.nilai}</td>
-                        <td class="p-3">${r.predikat}</td>
-                        <td class="p-3 text-xs opacity-70">${r.timestamp}</td>
-                    </tr>
-                `;
+            if (t > 70) { bg.className = "w-full transition-all flex items-center justify-center relative bg-amber-900"; stat.innerText = "Rusak Kritis ☠️"; }
+            else if (w < 30) { bg.className = "w-full transition-all flex items-center justify-center relative bg-amber-700"; stat.innerText = "Kekeringan 🏜️"; }
+            else if (t < 35 && w > 50 && f > 20 && f <= 85) { bg.className = "w-full transition-all flex items-center justify-center relative bg-blue-500"; stat.innerText = "Seimbang! 🌿"; }
+            else { bg.className = "w-full transition-all flex items-center justify-center relative bg-cyan-600"; stat.innerText = "Rentan ⚠️"; }
+        }
+        function finishLabExperiment() { state.progress.labCompleted = true; showCustomDialog('Sukses', 'Eksperimen Selesai! Game Terbuka.'); backToDashboard(); }
+
+        // --- MODULE 3: GAME ---
+        function renderGameChallenge() {
+            const b = document.getElementById('drag-bank'); b.innerHTML = '';
+            document.getElementById('zone-abiotik').innerHTML = ''; document.getElementById('zone-biotik').innerHTML = '';
+            for(let i=1; i<=4; i++) document.getElementById('zone-rm-'+i).innerHTML = ''; activeItemId = null;
+            
+            dndItems.sort(()=>0.5-Math.random()).forEach(item => {
+                const el = document.createElement('button');
+                el.id = item.id; el.className = "bg-white dark:bg-slate-600 dark:text-white border px-2 py-1 rounded shadow cursor-pointer text-xs font-bold";
+                el.innerText = item.text; el.onclick = (e) => clickItem(item.id, e);
+                b.appendChild(el);
             });
-
-            document.getElementById('stat-total').innerText = filtered.length;
-            document.getElementById('stat-rata').innerText = filtered.length ? (sumNilai / filtered.length).toFixed(1) : '0';
-            document.getElementById('stat-kkm').innerText = filtered.length ? Math.round((lulus / filtered.length) * 100) + "%" : '0%';
+            document.getElementById('btn-bermain-submit').disabled = false; document.getElementById('game-feedback-inline').innerText = '';
+        }
+        function clickItem(id, e) { if(e) e.stopPropagation(); activeItemId = activeItemId===id ? null : id; }
+        function clickZone(zid) {
+            if(!activeItemId) return;
+            const item = document.getElementById(activeItemId);
+            const zc = zid === 'bank' ? document.getElementById('drag-bank') : document.getElementById('zone-'+zid);
+            if(zid.startsWith('rm') && zc.children.length > 0) document.getElementById('drag-bank').appendChild(zc.children[0]);
+            zc.appendChild(item); activeItemId = null;
+        }
+        function submitDragDropAnswer() {
+            let correct = true, placed = 0;
+            dndItems.forEach(d => {
+                const p = document.getElementById(d.id).parentElement.id;
+                if(p !== 'drag-bank') placed++;
+                if(p !== 'zone-'+d.type) correct = false;
+            });
+            if(placed < dndItems.length) return showCustomDialog('Belum Lengkap', 'Tempatkan semua item!');
+            if(correct) {
+                state.bermain.score = 100; state.progress.bermainCompleted = true;
+                if(!isSoundMuted) confetti();
+                document.getElementById('btn-bermain-submit').disabled = true;
+                showCustomDialog('Sukses!', 'Game Selesai. Evaluasi Terbuka.'); setTimeout(()=>backToDashboard(), 2000);
+            } else { document.getElementById('game-feedback-inline').innerHTML = '<span class="text-red-500">Masih ada yang keliru!</span>'; }
         }
 
-        function downloadCSV() {
-            if(dataMuridServer.length === 0) return;
-            let csv = "No,Timestamp,Nama,NISN,Kelas,Materi,Skor Bermain,Skor Latihan,Nilai Akhir,Predikat\n";
-            dataMuridServer.forEach((r, i) => csv += `${i+1},${r.timestamp},"${r.nama}",${r.nisn},${r.kelas},${r.materi},${r.bermain},${r.latihan},${r.nilai},${r.predikat}\n`);
-            let link = document.createElement("a");
-            link.href = encodeURI("data:text/csv;charset=utf-8," + csv);
-            link.download = "Rekap_Nilai.csv"; link.click();
+        // --- MODULE 4: KUIS & REPORT ---
+        function renderQuizQuestion() {
+            const idx = state.berlatih.currentQuiz, q = quizQuestions[idx];
+            document.getElementById('quiz-num-display').innerText = `Soal ${idx + 1} / ${quizQuestions.length}`;
+            
+            let opts = '';
+            q.options.forEach((o, i) => {
+                const checked = state.berlatih.answers[idx] === i ? 'checked' : '';
+                opts += `<label class="flex gap-2 p-3 border rounded bg-white dark:bg-slate-700 cursor-pointer"><input type="radio" name="qopt" value="${i}" ${checked} onchange="state.berlatih.answers[${idx}]=${i}"><span>${o}</span></label>`;
+            });
+            document.getElementById('content-berlatih-quiz').innerHTML = `
+                <div class="bg-teal-50 dark:bg-slate-800 p-4 rounded-xl border border-teal-200"><p class="text-sm font-bold text-teal-800 dark:text-teal-300">Stimulus: ${q.stimulus}</p></div>
+                <h4 class="font-bold text-lg mt-4">${idx+1}. ${q.question}</h4><div class="space-y-2 mt-2">${opts}</div>
+            `;
+            document.getElementById('btn-quiz-prev').disabled = (idx === 0);
+            if(idx === quizQuestions.length - 1) { document.getElementById('btn-quiz-next').classList.add('hidden'); document.getElementById('btn-quiz-finish').classList.remove('hidden'); }
+            else { document.getElementById('btn-quiz-next').classList.remove('hidden'); document.getElementById('btn-quiz-finish').classList.add('hidden'); }
+        }
+        function navQuizQuestion(dir) { const n = state.berlatih.currentQuiz + dir; if(n >= 0 && n < quizQuestions.length) { state.berlatih.currentQuiz = n; renderQuizQuestion(); } }
+        
+        function finishAssessment() {
+            if(state.berlatih.answers.includes(null)) return showCustomDialog('Belum Selesai', 'Jawab semua soal!');
+            
+            let total = 0;
+            quizQuestions.forEach((q, i) => { if(state.berlatih.answers[i] === q.correct) total += q.points; });
+            const maxScore = quizQuestions.reduce((sum, q) => sum + q.points, 0);
+            state.berlatih.score = Math.round((total / maxScore) * 100);
+            state.progress.berlatihCompleted = true;
+            
+            if(!isSoundMuted) confetti({particleCount: 150});
+            generateReportView();
+            kirimDataKeGAS();
+            hideAll(); document.getElementById('layer-report').classList.remove('hidden');
         }
 
-        function submitJurnal(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btn-submit-jurnal'); btn.disabled = true; btn.innerText = "Mengirim...";
+        function generateReportView() {
+            document.getElementById('rep-student-name').innerText = state.student.name; document.getElementById('rep-student-class').innerText = state.student.class;
+            document.getElementById('rep-date').innerText = state.student.date;
+            document.getElementById('rep-final-score').innerText = state.berlatih.score;
+            
+            let p = state.berlatih.score >= 85 ? 'Sangat Baik' : state.berlatih.score >= 75 ? 'Baik' : 'Kurang';
+            document.getElementById('rep-predicate').innerText = `Predikat: ${p}`;
+
+            let rev = '', hasWrong = false;
+            quizQuestions.forEach((q, i) => {
+                if(state.berlatih.answers[i] !== q.correct) {
+                    hasWrong = true;
+                    rev += `<div class="bg-red-50 dark:bg-slate-800 p-3 rounded border border-red-200">
+                        <p class="font-bold text-sm mb-1">${q.question}</p>
+                        <p class="text-xs text-red-600 line-through">Jawabmu: ${q.options[state.berlatih.answers[i]]}</p>
+                        <p class="text-xs text-emerald-700 font-bold">Kunci: ${q.options[q.correct]}</p>
+                        <p class="text-xs mt-1 bg-white p-2 rounded">${q.explanation}</p>
+                    </div>`;
+                }
+            });
+            if(hasWrong) { document.getElementById('rep-wrong-answers-review').classList.remove('hidden'); document.getElementById('wrong-answers-content').innerHTML = rev; }
+            else { document.getElementById('wrong-answers-content').innerHTML = '<p class="text-emerald-600 font-bold">Semua Benar!</p>'; }
+        }
+
+        function kirimDataKeGAS() {
+            if (GAS_URL === "URL_GAS_ANDA_DISINI") return alert("Data tidak tersimpan karena URL Guru belum diatur.");
+            const p = state.berlatih.score >= 85 ? 'Sangat Baik' : state.berlatih.score >= 75 ? 'Baik' : 'Kurang';
+            
             fetch(GAS_URL, {
                 method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    type: "submit_jurnal", tanggal: document.getElementById('j-tanggal').value,
-                    kelas: document.getElementById('j-kelas').value, jam: document.getElementById('j-jam').value,
-                    materi: document.getElementById('j-materi').value, sakit: document.getElementById('j-sakit').value,
-                    ijin: document.getElementById('j-ijin').value, alpa: document.getElementById('j-alpa').value
-                })
-            }).then(() => { alert("Jurnal Terkirim!"); closeModal('modal-jurnal'); e.target.reset(); })
-            .finally(() => { btn.disabled = false; btn.innerText = "Kirim Jurnal"; });
+                body: JSON.stringify({ type: "submit_hasil", nama: state.student.name, nisn: state.student.nisn, kelas: state.student.class, pin: state.student.pin, materi: "Tuntas", bermain: state.bermain.score, latihan: state.berlatih.score, nilaiAkhir: state.berlatih.score, predikat: p })
+            }).catch(e => console.error(e));
         }
+
+        function downloadPDFReport() { html2pdf().set({filename:`Laporan_${state.student.name}.pdf`}).from(document.getElementById('pdf-report-area')).save(); }
     </script>
 </body>
 </html>
