@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruang Belajar - MPI IPAS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: { emerald: { 50: '#ecfdf5', 600: '#059669', 900: '#064e3b' }, amber: { 400: '#fbbf24', 500: '#f59e0b' } } } }
+        }
+    </script>
+    <style>
+        body { transition: background-color 0.3s, color 0.3s; }
+        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.4); }
+        .dark .glass-card { background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 255, 255, 0.1); color: #f8fafc; }
+    </style>
+</head>
+<body id="app-body" class="bg-gradient-to-br from-emerald-50 to-teal-100 dark:from-slate-900 dark:to-teal-900 text-slate-800 transition-all font-sans min-h-screen flex flex-col">
+
+    <!-- GLOBAL CONTROLS -->
+    <div class="fixed top-4 right-4 z-50 flex items-center gap-3 bg-white/70 dark:bg-black/50 backdrop-blur-md px-4 py-2 rounded-full shadow-lg">
+        <button onclick="toggleTheme()" class="text-slate-700 dark:text-amber-300 hover:scale-110 transition"><i id="icon-theme" class="fa-solid fa-moon"></i></button>
+        <div class="w-px h-5 bg-slate-300 dark:bg-slate-600"></div>
+        <button onclick="changeFontSize(1)" class="text-slate-700 dark:text-emerald-200 font-bold hover:scale-110 transition">A+</button>
+        <button onclick="changeFontSize(-1)" class="text-slate-700 dark:text-emerald-200 font-bold hover:scale-110 transition">A-</button>
+        <div class="w-px h-5 bg-slate-300 dark:bg-slate-600"></div>
+        <button onclick="toggleSound()" class="text-slate-700 dark:text-emerald-200 hover:scale-110 transition"><i id="icon-sound" class="fa-solid fa-volume-high"></i></button>
+    </div>
+
+    <main class="max-w-5xl mx-auto p-4 sm:p-6 flex-grow flex flex-col justify-center w-full">
+
+        <!-- LAYER COVER & LOGIN -->
+        <section id="layer-cover" class="glass-card rounded-3xl p-8 sm:p-12 text-center shadow-2xl relative">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-emerald-950 dark:text-emerald-400 mb-4">Misi Ekosistem Gorontalo</h1>
+            <p class="text-slate-600 dark:text-emerald-100 mb-8">Pintu Masuk Ruang Belajar IPAS Kelas V.</p>
+            <div class="max-w-md mx-auto text-left">
+                <form onsubmit="loginMurid(event)" class="space-y-4">
+                    <input type="text" id="input-nama" required placeholder="Nama Lengkap" class="w-full px-4 py-3 rounded-xl border dark:bg-slate-800">
+                    <div class="flex gap-2">
+                        <input type="number" id="input-nisn" placeholder="NISN (opsional)" class="w-1/2 px-4 py-3 rounded-xl border dark:bg-slate-800">
+                        <select id="input-kelas" required class="w-1/2 px-4 py-3 rounded-xl border dark:bg-slate-800">
+                            <option value="">- Kelas -</option><option value="VA">V A</option><option value="VB">V B</option><option value="VC">V C</option>
+                        </select>
+                    </div>
+                    <input type="password" id="input-pin" required placeholder="Buat PIN Rahasiamu" class="w-full px-4 py-3 rounded-xl border dark:bg-slate-800 tracking-widest text-center font-bold">
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md transition">Mulai Petualangan <i class="fa-solid fa-rocket ml-2"></i></button>
+                </form>
+            </div>
+        </section>
+
+        <!-- LAYER DASHBOARD MURID -->
+        <section id="layer-dashboard" class="hidden space-y-6 my-auto">
+            <div class="glass-card rounded-2xl p-5 shadow-xl flex justify-between items-center border-l-8 border-emerald-600">
+                <div>
+                    <h2 class="text-2xl font-bold dark:text-emerald-400">Halo, <span id="student-name"></span>!</h2>
+                    <p class="text-sm dark:text-slate-300">Tuntaskan misimu berurutan.</p>
+                </div>
+                <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-bold">Keluar</button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <button onclick="bukaModul('materi')" class="glass-card p-5 rounded-2xl border-2 border-emerald-500 text-left hover:-translate-y-1 transition">
+                    <div class="w-10 h-10 bg-emerald-600 text-white flex items-center justify-center rounded-lg mb-2"><i class="fa-solid fa-book"></i></div>
+                    <h3 class="font-bold text-lg dark:text-emerald-400">1. Materi</h3><p class="text-xs">Slide Ekosistem</p>
+                </button>
+                <button onclick="bukaModul('lab')" class="glass-card p-5 rounded-2xl border-2 border-blue-500 text-left hover:-translate-y-1 transition">
+                    <div class="w-10 h-10 bg-blue-500 text-white flex items-center justify-center rounded-lg mb-2"><i class="fa-solid fa-flask"></i></div>
+                    <h3 class="font-bold text-lg dark:text-blue-400">2. Laboratorium</h3><p class="text-xs">Simulasi Interaktif</p>
+                </button>
+                <button onclick="bukaModul('game')" class="glass-card p-5 rounded-2xl border-2 border-amber-500 text-left hover:-translate-y-1 transition">
+                    <div class="w-10 h-10 bg-amber-500 text-white flex items-center justify-center rounded-lg mb-2"><i class="fa-solid fa-gamepad"></i></div>
+                    <h3 class="font-bold text-lg dark:text-amber-400">3. Bermain</h3><p class="text-xs">Misi Ekosistem</p>
+                </button>
+                <button onclick="bukaModul('evaluasi')" class="glass-card p-5 rounded-2xl border-2 border-teal-500 text-left hover:-translate-y-1 transition">
+                    <div class="w-10 h-10 bg-teal-600 text-white flex items-center justify-center rounded-lg mb-2"><i class="fa-solid fa-pen"></i></div>
+                    <h3 class="font-bold text-lg dark:text-teal-400">4. Evaluasi</h3><p class="text-xs">Kuis & Laporan</p>
+                </button>
+            </div>
+        </section>
+
+        <!-- KONTEN MODUL DUMMY (Akan diganti dengan konten pembelajaran sesungguhnya di app final) -->
+        <section id="layer-pembelajaran" class="hidden glass-card rounded-3xl p-6 sm:p-10 shadow-2xl relative text-center">
+            <h2 id="judul-modul" class="text-2xl font-bold mb-4">Judul Modul</h2>
+            <p class="mb-6">Ini adalah antarmuka modul. Untuk versi demo deployment, siswa langsung simulasi selesai.</p>
+            <button onclick="selesaiModul()" class="bg-emerald-600 text-white font-bold py-2 px-6 rounded-xl">Tandai Selesai & Kembali</button>
+        </section>
+
+        <section id="layer-laporan" class="hidden glass-card rounded-3xl p-6 sm:p-10 shadow-2xl relative text-center border-t-8 border-amber-500">
+            <h2 class="text-2xl font-bold mb-2">Asesmen Selesai! 🎉</h2>
+            <p class="mb-4">Data kamu telah berhasil dikirim ke database guru.</p>
+            <div class="bg-emerald-100 text-emerald-900 p-4 rounded-xl inline-block mb-6">
+                <p>Nilai Akhir: <span class="font-black text-2xl">90</span></p>
+                <p>Predikat: Sangat Baik</p>
+            </div><br>
+            <button onclick="kembaliDashboard()" class="bg-slate-600 text-white font-bold py-2 px-6 rounded-xl">Kembali ke Beranda</button>
+        </section>
+
+    </main>
+
+    <script>
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxHDGd1Vhg_wCPFd70VgjXAh1Z42RHLCH8ksOptbtiSQhn7Xr1-kf3ZhQ6A2sRgDplhPA/exec";
+
+        let state = {
+            student: {},
+            progress: { materi: false, lab: false, game: false, evaluasi: false },
+            scores: { materi: "Tuntas", bermain: 100, latihan: 90, nilaiAkhir: 90, predikat: "Sangat Baik" }
+        };
+
+        // UI Controls
+        let isDarkMode = false, baseFontSize = 16, isSoundMuted = false;
+        function toggleTheme() { isDarkMode = !isDarkMode; document.documentElement.classList.toggle('dark', isDarkMode); }
+        function changeFontSize(dir) { baseFontSize += (dir * 2); document.getElementById('app-body').style.fontSize = Math.max(12, Math.min(baseFontSize, 24)) + 'px'; }
+        function toggleSound() { isSoundMuted = !isSoundMuted; document.getElementById('icon-sound').className = isSoundMuted ? "fa-solid fa-volume-xmark text-red-500" : "fa-solid fa-volume-high"; }
+        
+        function hideAll() { document.querySelectorAll('section').forEach(s => s.classList.add('hidden')); }
+
+        function loginMurid(e) {
+            e.preventDefault();
+            state.student = {
+                name: document.getElementById('input-nama').value,
+                nisn: document.getElementById('input-nisn').value || "-",
+                class: document.getElementById('input-kelas').value,
+                pin: document.getElementById('input-pin').value
+            };
+            document.getElementById('student-name').innerText = state.student.name;
+            hideAll();
+            document.getElementById('layer-dashboard').classList.remove('hidden');
+        }
+
+        function logout() {
+            hideAll();
+            document.getElementById('layer-cover').classList.remove('hidden');
+        }
+
+        function bukaModul(modul) {
+            hideAll();
+            if(modul === 'evaluasi') {
+                // Di aplikasi riil, jalankan quiz. Di demo ini langsung ke Laporan
+                kirimDataKeGAS();
+                document.getElementById('layer-laporan').classList.remove('hidden');
+            } else {
+                document.getElementById('layer-pembelajaran').classList.remove('hidden');
+                document.getElementById('judul-modul').innerText = "Modul " + modul.toUpperCase();
+            }
+        }
+
+        function selesaiModul() {
+            hideAll();
+            document.getElementById('layer-dashboard').classList.remove('hidden');
+        }
+
+        function kembaliDashboard() {
+            hideAll();
+            document.getElementById('layer-dashboard').classList.remove('hidden');
+        }
+
+        function kirimDataKeGAS() {
+            if (GAS_URL === "URL_GAS_ANDA_DISINI") return alert("Data tidak tersimpan. URL GAS Guru belum diatur.");
+            
+            const payload = {
+                type: "submit_hasil",
+                nama: state.student.name,
+                nisn: state.student.nisn,
+                kelas: state.student.class,
+                pin: state.student.pin,
+                materi: state.scores.materi,
+                bermain: state.scores.bermain,
+                latihan: state.scores.latihan,
+                nilaiAkhir: state.scores.nilaiAkhir,
+                predikat: state.scores.predikat
+            };
+
+            fetch(GAS_URL, {
+                method: "POST", mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            }).then(() => {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }).catch(e => console.error("Error offline save", e));
+        }
+    </script>
+</body>
+</html>
